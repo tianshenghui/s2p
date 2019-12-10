@@ -68,32 +68,35 @@ def plot_matches_low_level(im1, im2, matches):
         path to the resulting image, to be displayed
     """
     # load images
-    with rasterio.open(im1, 'r') as f:
-        img1 = f.read().squeeze()
+     with rasterio.open(im1, 'r') as f:
+        img1 = np.asarray(f.read().squeeze())
     with rasterio.open(im2, 'r') as f:
-        img2 = f.read().squeeze()
+        img2 = np.asarray(f.read().squeeze())
 
     # transform single channel to 3-channels
     if img1.ndim < 3:
         img1 = np.dstack([img1] * 3)
     if img2.ndim < 3:
-        img2= np.dstack([img2] * 3)
+        img2 = np.dstack([img2] * 3)
 
     # if images have more than 3 channels, keep only the first 3
-    if img1.shape[2] > 3:
-        img1 = img1[:, :, 0:3]
-    if img2.shape[2] > 3:
-        img2 = img2[:, :, 0:3]
+    if img1.shape[0] > 3:
+        img1 = img1[0:3, :, :]
+    if img2.shape[0] > 3:
+        img2 = img2[0:3, :, :]
 
     # build the output image
-    h1, w1 = img1.shape[:2]
-    h2, w2 = img2.shape[:2]
+    h1, w1 = img1.shape[1], img1.shape[2]
+    h2, w2 = img2.shape[1], img2.shape[2]
     w = w1 + w2
     h = max(h1, h2)
     out = np.zeros((h, w, 3), np.uint8)
-    out[:h1, :w1] = img1
-    out[:h2, w1:w] = img2
-
+    out[:h1, :w1, 0] = img1[0, :, :].reshape((h1, w1))
+    out[:h1, :w1, 1] = img1[1, :, :].reshape((h1, w1))
+    out[:h1, :w1, 2] = img1[2, :, :].reshape((h1, w1))
+    out[:h2, w1:w, 0] = img2[0, :, :].reshape((h2, w2))
+    out[:h2, w1:w, 1] = img2[1, :, :].reshape((h2, w2))
+    out[:h2, w1:w, 2] = img2[2, :, :].reshape((h2, w2))
     # define colors, according to min/max intensity values
     out_min = min(np.nanmin(img1), np.nanmin(img2))
     out_max = max(np.nanmax(img1), np.nanmax(img2))
